@@ -12,7 +12,6 @@ typedef struct Vnode
 {
 
 	int v;
-	int score;
 	int isTabu;
 
 	struct Vnode * next;
@@ -35,6 +34,8 @@ int c[N];
 int cbest[N];
 int UB;               //解的总权重
 long long iter;			//迭代次数
+int score[N];
+int w[N];
 int age[N];
 int wconfig[N];
 int cbest[N];
@@ -64,7 +65,6 @@ int CreateList()
 	}
 	pnew->v = 0;
 	pnew->isTabu = 0;
-	pnew->score = 0;
 	pnew->next = NULL;
 	nChead->next = pnew;
 	nCend = pnew;
@@ -78,8 +78,8 @@ int CreateList()
 		}
 		pnew->v = i;
 		pnew->isTabu = 0;
-		pnew->score = 0;
 		pnew->next = NULL;
+
 		nCend->next = pnew;
 		nCend = pnew;
 	}
@@ -115,19 +115,23 @@ V *TabuFindScoreMaxC(int * x)
 	V *ppre = Chead;
 	V *p = Chead->next;
 	V *pos = Chead;
+	int vi;
 	int max = p->score;
 
 	while (p->next != NULL)
 	{
-		if ((p->score > max) && (p->isTabu = 0))
+		vi = p->v;
+		if ((score[vi] > max) && (p->isTabu == 0))
 		{
 			max = p->score;
 			pos = ppre;
 		}
+		ppre = p;
 		p = p->next;
-		ppre = p->next;
 	}
+
 	*x = pos->next->v;
+	c[*x] = 0;
 
 	return pos;
 }
@@ -137,19 +141,24 @@ V * FindScoreMaxNC(int * x)
 	V *ppre = Chead;
 	V *p = Chead->next;
 	V *pos = Chead;
+	int vi;
 	int max = p->score;
 
-	while (p->next != NULL)
+	while (p != NULL)
 	{
-		if ((p->score > max) && (wconfig[(p->v)] == 1))
+		vi = p->v;
+		if (score[vi] > max) && (wconfig[vi] == 1))
 		{
 			max = p->score;
 			pos = ppre;
 		}
+		ppre = p;
 		p = p->next;
-		ppre = p->next;
 	}
+
 	*x = pos->next->v;
+	c[*x] = 1;
+
 	return pos;
 }
 
@@ -161,17 +170,19 @@ V * FindScoreMaxC(int * x)
 	V * pos = Chead;
 	int max = p->score;
 
-	while (p->next != NULL)
+	while (p != NULL)
 	{
-		if (p->score > max)
+		if (score[p->v] > max)
 		{
 			max = p->score;
 			pos = ppre;
 		}
+		ppre = p;
 		p = p->next;
-		ppre = p->next;
+		
 	}
 	*x = pos->next->v;
+	c[*x] = 0;
 	return pos;
 
 }
@@ -241,26 +252,64 @@ void Eminus(int v)
 
 }
 
-void updatescore()
+void updatescore(int x)
 {
-	
+
+	int i;
+	score[x] = score[x] * (-1);
+	for (i = 0; i < N; i++)
+	{
+		if (e[x][i] != 0)
+		{
+			if (c[i] + c[x] == 1)
+			{
+				score[i] = score[i] - e[x][i] / w[i];
+			}
+			else
+			{
+				score[i] = score[i] + e[x][i] / w[i];
+			}
+		}
+	}
+}
+
+void updateDW()
+{
+	int v1;
+	int v2;
+	V * p1 = nChead->next;
+	V * p2 = nChead->next;
+	while (p1 != NULL)
+	{
+		v1 = p1->v;
+		while (p2 != NULL)
+		{
+			v2 = p2->v;
+			if (e[v1][v2] > 0)
+				e[v1][v2]++;
+			p2 = p2->next;
+		}
+		p1 = p1->next;
+	}
 
 }
 
 int init()
 {
 	FILE *fp;
+	V * p;
 	int i, j, n = 0, k = 0;
 	char str[5000] = {'0'};
 	char tmp[10];
+	int score[N];
 
 	for (i = 0; i < N; i++)
 	{
 		wconfig[i] = 1;
-		nC[i] = i;
-		nCpos[i] = i;
-
 	}
+
+	CreateList();
+	p = nChead->next;
 
 	fp = fopen("E:\\CPP\\dingdian\\MVVC\\vc_100_100_01.txt", "r");
 
@@ -286,6 +335,7 @@ int init()
 					tmp[j++] = str[i++];
 				tmp[j] = '\n';
 				w[k] = atoi(tmp);
+
 			}
 		}
 
@@ -316,31 +366,32 @@ int init()
 
 void greedy()
 {
-	float tmp[N];
+	V *ppre = nChead;
+	V *p = nChead->next;
+	V *pos = nChead;
+	int vi = p->v;
 	int i;
-	int k;
-	int flag;
-	float max;
-
-	for (i = 0; i < N; i++)
-		tmp[i] = score[i] * 1.0 / w[i];
+	
+	float max = score[vi]*1.0/w[i];
 
 	for (k = 0; k < N; k++)
 	{
 
-		for (i = 0, max = tmp[i], flag = 0; i < N; i++)
+		while (p != NULL)
 		{
-
-			if (tmp[i] > max)
+			vi = p->v;
+			if ((p->score > max) && (p->isTabu = 0))
 			{
-				max = tmp[i];
-				flag = i;
+				max = p->score;
+				pos = ppre;
 			}
+			ppre = p;
+			p = p->next;
 		}
 
 		tmp[flag] = 0;
 		c[flag] = 1;
-		if (judge() == 1)
+		if ()
 			break;
 	}
 }
@@ -476,44 +527,26 @@ void main()
 				}
 				step++;
 
-
-				/*printf("第%d次\n",step);
-				printf("time = %ld\n",end - start);
-				printf("迭代次数%d\n",iter);*/
                 h = end - start;
                 printf("%d,",h);
                 printf("%d,",iter);
                 printf("%d\n",UBbest);
 
-
-
 			}
 			v=removev();
-			//printf("iter = %ld\n",iter);
-			//printf("\n改变的是第%d个顶点\n",v);
+
 			c[v]=0;
 			Eminus(v);
 			newscore(v);
 			age[v]=0;
 			WCC_Rule2(v);
 
-			/*eshow();
-			cshow();
-			scoreshow();
-			wconfigshow();
-
-			printf("\n");*/
-
 		}
 		v=removetabu();
 		newscore(v);
 		c[v]=0;
 		Eminus(v);
-		//printf("\n减去的是第%d个顶点\n",v);
-		/*eshow();
-			cshow();
-			scoreshow();
-			wconfigshow();*/
+
 		WCC_Rule2(v);
 
 		for(i=0;i<N;i++)
@@ -530,41 +563,22 @@ void main()
 			}
 			c[v]=1;
             Eadd(v);
-			//printf("\n增加的是第%d个顶点\n",v);
 			newscore(v);
 			WCC_Rule3(v);
 			age[v]=0;
 			edgeadd();
 			tabu[v]=1;
-			/*eshow();
-			cshow();
-			scoreshow();
-			wconfigshow();*/
+
 		}
 
 		iter++;
 		step++;
-		//if(step > 100000) break;
+
 		for(i=0;i<N;i++)
 		{
 			age[i]++;
 		}
-		/*if(iter%10000000)
-        {
 
-            for(i=0;i<N;i++)
-            {
-                if(cbest[i]==1)
-                {
-                    printf("%5d",w[i]);
-                }
-            }
-            printf("\n");
-
-            scoreshow();
-            wconfigshow();
-
-        }*/
 	}
 	end = clock();
 
