@@ -12,8 +12,6 @@ typedef struct Vnode
 {
 
 	int v;
-	int isTabu;
-
 	struct Vnode * next;
 
 }   V;
@@ -32,15 +30,33 @@ int nCnum = N;
 
 int c[N];
 int cbest[N];
+int age[N];
+int tabu[N];
 int UB;               //解的总权重
 long long iter;			//迭代次数
 int score[N];
 int w[N];
-int age[N];
 int wconfig[N];
 int cbest[N];
 int UBbest;
 int edgen = EDGE;
+
+int getline(char *str, FILE *fp, int n)
+{
+
+	int i;
+	char c = '0';
+	for (i = 0; (c != '\n') && (!feof(fp)) && (i < n); i++)
+	{
+		c = fgetc(fp);
+		str[i] = c;
+	}
+
+	if (i >= n)
+		return 0;
+	else
+		return 1;
+}
 
 int CreateList()
 {
@@ -48,24 +64,24 @@ int CreateList()
 	int i;
 	if ((Chead = malloc(sizeof(V))) == NULL)
 	{
-		printf("Can't malloc in CreateList Chead", i);
+		printf("Can't malloc in CreateList Chead");
 		return 0;
 	}
 	if ((nChead = malloc(sizeof(V))) == NULL)
 	{
-		printf("Can't malloc in CreateList nChead", i);
+		printf("Can't malloc in CreateList nChead");
 		return 0;
 	}
 	Cend = Chead;
 	nCend = nChead;
 	if ((pnew = malloc(sizeof(V))) == NULL)
 	{
-		printf("Can't malloc in CreateList i = %d", i);
+		printf("Can't malloc in CreateList i = 0");
 		return 0;
 	}
 	pnew->v = 0;
-	pnew->isTabu = 0;
 	pnew->next = NULL;
+
 	nChead->next = pnew;
 	nCend = pnew;
 
@@ -77,7 +93,6 @@ int CreateList()
 			return 0;
 		}
 		pnew->v = i;
-		pnew->isTabu = 0;
 		pnew->next = NULL;
 
 		nCend->next = pnew;
@@ -110,22 +125,29 @@ void DeleteList()
 	free(ppre);
 }
 
-V *TabuFindScoreMaxC(int * x)
+V * TabuFindScoreMaxC(int * x)
 {
 	V *ppre = Chead;
 	V *p = Chead->next;
 	V *pos = Chead;
-	int vi;
-	int max = p->score;
+	int vi = p->v;
+	int max = score[vi];
+	int age1 = 0,age2 = 0;
 
 	while (p->next != NULL)
 	{
 		vi = p->v;
-		if ((score[vi] > max) && (p->isTabu == 0))
+		if (tabu[vi] == 0)
 		{
-			max = p->score;
-			pos = ppre;
+			if (score[vi] > max)
+			{
+				max = score[vi];
+				pos = ppre;
+			}
+			else if (score[vi] == max)
+				pos = (age[pos->next->v] >= age[vi]) ? pos : ppre;
 		}
+
 		ppre = p;
 		p = p->next;
 	}
@@ -138,19 +160,24 @@ V *TabuFindScoreMaxC(int * x)
 
 V * FindScoreMaxNC(int * x)
 {
-	V *ppre = Chead;
-	V *p = Chead->next;
-	V *pos = Chead;
-	int vi;
-	int max = p->score;
+	V *ppre = nChead;
+	V *p = nChead->next;
+	V *pos = nChead;
+	int vi = p->v;
+	int max = score[vi];
 
 	while (p != NULL)
 	{
 		vi = p->v;
-		if (score[vi] > max) && (wconfig[vi] == 1))
+		if (wconfig[vi] == 1)
 		{
-			max = p->score;
-			pos = ppre;
+			if (score[vi] > max)
+			{
+				max = score[vi];
+				pos = ppre;
+			}
+			else if (score[vi] == max)
+				pos = (age[pos->next->v] >= age[vi]) ? pos : ppre;
 		}
 		ppre = p;
 		p = p->next;
@@ -168,18 +195,21 @@ V * FindScoreMaxC(int * x)
 	V * ppre = Chead;
 	V * p = Chead->next;
 	V * pos = Chead;
-	int max = p->score;
+	int vi = p->v;
+	int max = score[vi];
 
 	while (p != NULL)
 	{
-		if (score[p->v] > max)
+		vi = p->v;
+		if (score[vi] > max)
 		{
-			max = p->score;
+			max = score[vi];
 			pos = ppre;
 		}
+		else if (score[vi] == max)
+			pos = (age[pos->next->v] >= age[vi]) ? pos : ppre;
 		ppre = p;
 		p = p->next;
-		
 	}
 	*x = pos->next->v;
 	c[*x] = 0;
@@ -192,7 +222,7 @@ int delv(V *ppre)
 
 	V * p = ppre->next;
 	if (ppre == Chead)
-		Chead->next = p;
+		Chead->next = p->next;
 	else if (p == Cend)
 	{
 		Cend = ppre;
@@ -212,7 +242,7 @@ int addv(V * ppre)
 {
 	V * p = ppre->next;
 	if (ppre == nChead)
-		nChead->next = p;
+		nChead->next = p->next;
 	else if (p == nCend)
 	{
 		nCend = ppre;
@@ -286,12 +316,15 @@ void updateDW()
 		{
 			v2 = p2->v;
 			if (e[v1][v2] > 0)
+			{
 				e[v1][v2]++;
+				wconfig[v1] = 1;
+				wconfig[v2] = 1;
+			}
 			p2 = p2->next;
 		}
 		p1 = p1->next;
 	}
-
 }
 
 int init()
@@ -371,28 +404,32 @@ void greedy()
 	V *pos = nChead;
 	int vi = p->v;
 	int i;
-	
-	float max = score[vi]*1.0/w[i];
+	int k;
+	int flag;
+	float tmp[N];
+	float max;
+
+	for (i = 0; i < N; i++)
+		tmp[i] = score[i]*1.0/w[i];
 
 	for (k = 0; k < N; k++)
 	{
-
+		ppre = nChead;
+		p = nChead->next;
 		while (p != NULL)
 		{
 			vi = p->v;
-			if ((p->score > max) && (p->isTabu = 0))
+			if (tmp[vi] > max)
 			{
-				max = p->score;
+				max = tmp[vi];
 				pos = ppre;
+				flag = vi;
 			}
 			ppre = p;
 			p = p->next;
 		}
-
 		tmp[flag] = 0;
-		c[flag] = 1;
-		if ()
-			break;
+		addv(pos);
 	}
 }
 
@@ -487,13 +524,15 @@ void WCC_Rule4(int vi, int ui)
 void main()
 {
 	int k;
-	int v;
+
 	int i;
 	int step = 0;
 	int vnum = 0;
 	clock_t start;
 	clock_t end;
 	clock_t h;
+	V * ppre;
+	int x = 0;
 
 	init();
 	wshow();
@@ -531,23 +570,21 @@ void main()
                 printf("%d,",h);
                 printf("%d,",iter);
                 printf("%d\n",UBbest);
-
 			}
-			v=removev();
-
-			c[v]=0;
-			Eminus(v);
-			newscore(v);
-			age[v]=0;
-			WCC_Rule2(v);
+			ppre = FindScoreMaxC(&x);
+			delv(ppre);
+			Eminus(x);
+			updatescore(x);
+			age[x] = 0;
+			WCC_Rule2(x);
 
 		}
-		v=removetabu();
-		newscore(v);
-		c[v]=0;
-		Eminus(v);
-
-		WCC_Rule2(v);
+		ppre = TabuFindScoreMaxC(&x);
+		delv(ppre);
+		Eminus(x);
+		updatescore(x);
+		age[x] = 0;
+		WCC_Rule2(x);
 
 		for(i=0;i<N;i++)
 		{
@@ -556,23 +593,22 @@ void main()
 
 		while(edgen < EDGE)
 		{
-			v=add();
-			if(w[v]+sumwc()>=UB)
+			ppre = FindScoreMaxNC(&x);
+			if(w[x]+sumwc()>=UB)
 			{
 				break;
 			}
-			c[v]=1;
-            Eadd(v);
-			newscore(v);
-			WCC_Rule3(v);
-			age[v]=0;
-			edgeadd();
-			tabu[v]=1;
+			
+            vadd(ppre);
+			updatescore(x);
+			WCC_Rule3(x);
+			age[x]=0;
+			updateDW();
+			tabu[x]=1;
 
 		}
 
 		iter++;
-		step++;
 
 		for(i=0;i<N;i++)
 		{
@@ -600,24 +636,3 @@ void main()
 	//getchar();
 
 }
-
-
-
-
-int getline(char *str, FILE *fp, int n)
-{
-
-    int i;
-    char c = '0';
-    for (i = 0; (c != '\n') && (!feof(fp)) && (i < n); i++)
-    {
-        c = fgetc(fp);
-        str[i] = c;
-    }
-
-    if (i >= n)
-        return 0;
-    else
-        return 1;
-}
-
