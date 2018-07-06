@@ -4,9 +4,9 @@
 #include<stdlib.h>
 #include<malloc.h>
 
-#define N 100
+#define N 10
 
-#define EDGE 100
+#define EDGE 10
 
 typedef struct Vnode
 {
@@ -40,7 +40,8 @@ int wconfig[N];
 int cbest[N];
 int UBbest;
 int edgen = EDGE;
-
+void wshow();
+void eshow();
 int getline(char *str, FILE *fp, int n)
 {
 
@@ -98,7 +99,7 @@ int CreateList()
 		nCend->next = pnew;
 		nCend = pnew;
 	}
-	
+
 }
 
 void DeleteList()
@@ -132,7 +133,7 @@ V * TabuFindScoreMaxC(int * x)
 	V *pos = Chead;
 	int vi = p->v;
 	int max = score[vi];
-	int age1 = 0,age2 = 0;
+
 
 	while (p->next != NULL)
 	{
@@ -236,6 +237,8 @@ int delv(V *ppre)
 
 	Cnum--;
 	nCnum++;
+
+    UB -= w[p->v];
 }
 
 int addv(V * ppre)
@@ -256,6 +259,7 @@ int addv(V * ppre)
 
 	Cnum--;
 	nCnum++;
+	UB += w[p->v];
 }
 
 
@@ -326,11 +330,46 @@ void updateDW()
 		p1 = p1->next;
 	}
 }
+void greedy()
+{
+	V *ppre = nChead;
+	V *p = nChead->next;
+	V *pos = nChead;
+	int vi = p->v;
+	int i;
+	int k;
+	int flag;
+	float tmp[N];
+	float max;
+
+	for (i = 0; i < N; i++)
+		tmp[i] = score[i]*1.0/w[i];
+
+	for (k = 0; k < N; k++)
+	{
+		ppre = nChead;
+		p = nChead->next;
+		while (p != NULL)
+		{
+			vi = p->v;
+			if (tmp[vi] > max)
+			{
+				max = tmp[vi];
+				pos = ppre;
+				flag = vi;
+			}
+			ppre = p;
+			p = p->next;
+		}
+		tmp[flag] = 0;
+		addv(pos);
+	}
+}
 
 int init()
 {
 	FILE *fp;
-	V * p;
+
 	int i, j, n = 0, k = 0;
 	char str[5000] = {'0'};
 	char tmp[10];
@@ -342,9 +381,9 @@ int init()
 	}
 
 	CreateList();
-	p = nChead->next;
 
-	fp = fopen("E:\\CPP\\dingdian\\MVVC\\vc_100_100_01.txt", "r");
+
+	fp = fopen("E:\\CPP\\dingdian\\MVVC\\vc_10_10_01.txt", "r");
 
 	if (fp == NULL)
 	{
@@ -389,6 +428,8 @@ int init()
 			}
 		}
 	}
+	wshow();
+	eshow();
 	greedy();
 	for (i = 0; i < N; i++)
 	{
@@ -397,41 +438,7 @@ int init()
 	return 1;
 }
 
-void greedy()
-{
-	V *ppre = nChead;
-	V *p = nChead->next;
-	V *pos = nChead;
-	int vi = p->v;
-	int i;
-	int k;
-	int flag;
-	float tmp[N];
-	float max;
 
-	for (i = 0; i < N; i++)
-		tmp[i] = score[i]*1.0/w[i];
-
-	for (k = 0; k < N; k++)
-	{
-		ppre = nChead;
-		p = nChead->next;
-		while (p != NULL)
-		{
-			vi = p->v;
-			if (tmp[vi] > max)
-			{
-				max = tmp[vi];
-				pos = ppre;
-				flag = vi;
-			}
-			ppre = p;
-			p = p->next;
-		}
-		tmp[flag] = 0;
-		addv(pos);
-	}
-}
 
 void wshow()
 {
@@ -521,6 +528,7 @@ void WCC_Rule4(int vi, int ui)
 	wconfig[ui] = 1;
 }
 
+
 void main()
 {
 	int k;
@@ -540,7 +548,6 @@ void main()
 	scoreshow();
 	wconfigshow();
 
-	UB=sumwc();
 	UBbest=UB;
 	iter=0;
 	for(i=0;i<N;i++)
@@ -554,7 +561,6 @@ void main()
 	{
 		while(edgen == EDGE)
 		{
-			UB=sumwc();
 
 			if(UB<UBbest)
 			{
@@ -594,12 +600,12 @@ void main()
 		while(edgen < EDGE)
 		{
 			ppre = FindScoreMaxNC(&x);
-			if(w[x]+sumwc()>=UB)
+			if(w[x]+ UB >= UBbest)
 			{
 				break;
 			}
-			
-            vadd(ppre);
+
+            addv(ppre);
 			updatescore(x);
 			WCC_Rule3(x);
 			age[x]=0;
