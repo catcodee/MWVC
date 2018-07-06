@@ -10,100 +10,213 @@
 
 typedef struct Vnode
 {
+
 	int v;
+	int score;
+	int isTabu;
+
 	struct Vnode * next;
+
 }   V;
-
-
 
 int w[N];             //顶点权重
 int e[N][N] = {{0}};          //邻接表
-int score[N];         //顶点分数
+
 
 V * Chead;
 V * Cend;
-
 V * nChead;
 V * nCend;
 
-int Cnum;
+int Cnum = 0;
 int nCnum = N;
 
-
-int tabu[N];          //禁忌表
+int c[N];
+int cbest[N];
 int UB;               //解的总权重
-int wconfig[N] = {1};       //格局
 long long iter;			//迭代次数
-int age[N];			//年龄
+int age[N];
+int wconfig[N];
 int cbest[N];
 int UBbest;
 int edgen = EDGE;
 
-
-void updatescore(int x)//移动以后的
-{
-	int i;
-	score[x]=score[x]*(-1);
-	for(i=0;i<N;i++)
-	{
-		if(e[x][i]!=0)
-		{
-			if(c[i]+c[x]==1)
-			{
-				score[i]=score[i]-e[x][i]/w[i];
-			}
-			else
-			{
-				score[i]=score[i]+e[x][i]/w[i];
-			}
-		}
-	}
-}
-
-
-
-
-int addv(int v)
+int CreateList()
 {
 	V * pnew;
-	V * p;
-	V * ppre;
-
-	
-	if ( (V =  malloc(sizeof(V))) == NULL) {
-		printf("Can't malloc in addv");
+	int i;
+	if ((Chead = malloc(sizeof(V))) == NULL)
+	{
+		printf("Can't malloc in CreateList Chead", i);
 		return 0;
 	}
-	
-	pnew->v = v;
+	if ((nChead = malloc(sizeof(V))) == NULL)
+	{
+		printf("Can't malloc in CreateList nChead", i);
+		return 0;
+	}
+	Cend = Chead;
+	nCend = nChead;
+	if ((pnew = malloc(sizeof(V))) == NULL)
+	{
+		printf("Can't malloc in CreateList i = %d", i);
+		return 0;
+	}
+	pnew->v = 0;
+	pnew->isTabu = 0;
+	pnew->score = 0;
 	pnew->next = NULL;
-	if (Chead == Cend)
+	nChead->next = pnew;
+	nCend = pnew;
+
+	for (i = 1; i < N; i++)
 	{
-		Chead->next = pnew;
-		Cend = pnew;
+		if ((pnew = malloc(sizeof(V))) == NULL)
+		{
+			printf("Can't malloc in CreateList i = %d",i);
+			return 0;
+		}
+		pnew->v = i;
+		pnew->isTabu = 0;
+		pnew->score = 0;
+		pnew->next = NULL;
+		nCend->next = pnew;
+		nCend = pnew;
 	}
-	else
+	
+}
+
+void DeleteList()
+{
+	V * ppre = Chead;
+	V * p = Chead->next;
+
+	while (p != NULL)
 	{
-		Cend->next = pnew;
-		Cend = pnew;
+		free(ppre);
+		ppre = p;
+		p = p->next;
 	}
+	free(ppre);
 
 	ppre = nChead;
-	p = ppre->next;
-	while (p->next->next != NULL)
+	p = nChead->next;
+	while (p != NULL)
 	{
-		if (p->v == v)
-		{
-			if (p == nCend)
-			{
-
-			}
-			ppre->next = p->next;
-
-		}
+		free(ppre);
+		ppre = p;
+		p = p->next;
 	}
+	free(ppre);
+}
+
+V *TabuFindScoreMaxC(int * x)
+{
+	V *ppre = Chead;
+	V *p = Chead->next;
+	V *pos = Chead;
+	int max = p->score;
+
+	while (p->next != NULL)
+	{
+		if ((p->score > max) && (p->isTabu = 0))
+		{
+			max = p->score;
+			pos = ppre;
+		}
+		p = p->next;
+		ppre = p->next;
+	}
+	*x = pos->next->v;
+
+	return pos;
+}
+
+V * FindScoreMaxNC(int * x)
+{
+	V *ppre = Chead;
+	V *p = Chead->next;
+	V *pos = Chead;
+	int max = p->score;
+
+	while (p->next != NULL)
+	{
+		if ((p->score > max) && (wconfig[(p->v)] == 1))
+		{
+			max = p->score;
+			pos = ppre;
+		}
+		p = p->next;
+		ppre = p->next;
+	}
+	*x = pos->next->v;
+	return pos;
+}
+
+V * FindScoreMaxC(int * x)
+{
+
+	V * ppre = Chead;
+	V * p = Chead->next;
+	V * pos = Chead;
+	int max = p->score;
+
+	while (p->next != NULL)
+	{
+		if (p->score > max)
+		{
+			max = p->score;
+			pos = ppre;
+		}
+		p = p->next;
+		ppre = p->next;
+	}
+	*x = pos->next->v;
+	return pos;
 
 }
+
+int delv(V *ppre)
+{
+
+	V * p = ppre->next;
+	if (ppre == Chead)
+		Chead->next = p;
+	else if (p == Cend)
+	{
+		Cend = ppre;
+		ppre->next = NULL;
+	}
+	else
+		ppre->next = p->next;
+
+	nCend = p;
+	p->next = NULL;
+
+	Cnum--;
+	nCnum++;
+}
+
+int addv(V * ppre)
+{
+	V * p = ppre->next;
+	if (ppre == nChead)
+		nChead->next = p;
+	else if (p == nCend)
+	{
+		nCend = ppre;
+		ppre->next = NULL;
+	}
+	else
+		ppre->next = p->next;
+
+	Cend = p;
+	p->next = NULL;
+
+	Cnum--;
+	nCnum++;
+}
+
 
 void Eadd(int v)
 {
@@ -128,11 +241,11 @@ void Eminus(int v)
 
 }
 
+void updatescore()
+{
+	
 
-
-
-
-
+}
 
 int init()
 {
