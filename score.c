@@ -1,12 +1,13 @@
-ï»¿#include<stdio.h>
+#include<stdio.h>
 #include<time.h>
 #include<string.h>
 #include<stdlib.h>
 #include<malloc.h>
 
-#define N 10
+#define N 100
 
-#define EDGE 10
+#define EDGE 100
+
 
 typedef struct Vnode
 {
@@ -16,8 +17,8 @@ typedef struct Vnode
 
 }   V;
 
-int w[N];             //é¡¶ç‚¹æƒé‡
-int e[N][N] = {{0}};          //é‚»æŽ¥è¡¨
+int w[N];             //¶¥µãÈ¨ÖØ
+int e[N][N] = {{0}};          //ÁÚ½Ó±í
 
 
 V * Chead;
@@ -32,16 +33,15 @@ int c[N];
 int cbest[N];
 int age[N];
 int tabu[N];
-int UB;               //è§£çš„æ€»æƒé‡
-long long iter;			//è¿­ä»£æ¬¡æ•°
+int UB;               //½âµÄ×ÜÈ¨ÖØ
+long iter;			//µü´ú´ÎÊý
 int score[N];
-int w[N];
 int wconfig[N];
-int cbest[N];
 int UBbest;
-int edgen = EDGE;
+int edgen = 0;
 void wshow();
 void eshow();
+
 int getline(char *str, FILE *fp, int n)
 {
 
@@ -232,13 +232,10 @@ int delv(V *ppre)
 	else
 		ppre->next = p->next;
 
+	nCend->next = p;
 	nCend = p;
 	p->next = NULL;
 
-	Cnum--;
-	nCnum++;
-
-    UB -= w[p->v];
 }
 
 int addv(V * ppre)
@@ -254,12 +251,10 @@ int addv(V * ppre)
 	else
 		ppre->next = p->next;
 
+	Cend->next = p;
 	Cend = p;
 	p->next = NULL;
 
-	Cnum--;
-	nCnum++;
-	UB += w[p->v];
 }
 
 
@@ -330,6 +325,19 @@ void updateDW()
 		p1 = p1->next;
 	}
 }
+
+int sumW()
+{
+    V * p = Chead->next;
+    int weight = 0;
+    while (p != NULL)
+    {
+        weight += w[p->v];
+        p = p->next;
+    }
+    return weight;
+}
+
 void greedy()
 {
 	V *ppre = nChead;
@@ -349,6 +357,7 @@ void greedy()
 	{
 		ppre = nChead;
 		p = nChead->next;
+		max = tmp[vi];
 		while (p != NULL)
 		{
 			vi = p->v;
@@ -361,8 +370,11 @@ void greedy()
 			ppre = p;
 			p = p->next;
 		}
-		tmp[flag] = 0;
+
+		c[flag] = 1;
 		addv(pos);
+        Eadd(flag);
+        if (edgen == EDGE) break;
 	}
 }
 
@@ -373,17 +385,18 @@ int init()
 	int i, j, n = 0, k = 0;
 	char str[5000] = {'0'};
 	char tmp[10];
-	int score[N];
+
 
 	for (i = 0; i < N; i++)
 	{
 		wconfig[i] = 1;
+		score[i] = 0;
 	}
 
 	CreateList();
 
 
-	fp = fopen("E:\\CPP\\dingdian\\MVVC\\vc_10_10_01.txt", "r");
+	fp = fopen("E:\\CPP\\dingdian\\MVVC\\vc_100_100_01.txt", "r");
 
 	if (fp == NULL)
 	{
@@ -422,7 +435,6 @@ int init()
 				}
 				tmp[j] = '\n';
 				e[n - 2][k] = atoi(tmp);
-
 				if (e[n - 2][k] == 1)
 					score[n - 2]++;
 			}
@@ -430,6 +442,7 @@ int init()
 	}
 	wshow();
 	eshow();
+	scoreshow();
 	greedy();
 	for (i = 0; i < N; i++)
 	{
@@ -443,7 +456,7 @@ int init()
 void wshow()
 {
 	int i;
-	printf("æƒé‡ï¼š\n");
+	printf("È¨ÖØ£º\n");
 	for (i = 0; i < N; i++)
 	{
 		printf(" %d", w[i]);
@@ -455,7 +468,7 @@ void wshow()
 void cshow()
 {
 	int i;
-	printf("ç»“æžœï¼š\n");
+	printf("½á¹û£º\n");
 	for (i = 0; i < N; i++)
 	{
 		printf(" %d", c[i]);
@@ -467,7 +480,7 @@ void cshow()
 void eshow()
 {
 	int i, j;
-	printf("åŠ¨æ€è¾¹ï¼š\n");
+	printf("¶¯Ì¬±ß£º\n");
 	for (i = 0; i < N; i++)
 	{
 		for (j = 0; j < N; j++)
@@ -480,7 +493,7 @@ void eshow()
 void scoreshow()
 {
 	int i;
-	printf("åˆ†æ•°ï¼š\n");
+	printf("·ÖÊý£º\n");
 	for (i = 0; i < N; i++)
 	{
 		printf(" %d", score[i]);
@@ -492,7 +505,7 @@ void scoreshow()
 void wconfigshow()
 {
 	int i;
-	printf("æ ¼å±€ï¼š\n");
+	printf("¸ñ¾Ö£º\n");
 	for (i = 0; i < N; i++)
 	{
 		printf(" %d", wconfig[i]);
@@ -528,7 +541,28 @@ void WCC_Rule4(int vi, int ui)
 	wconfig[ui] = 1;
 }
 
-
+void showC()
+{
+    V * p = Chead->next;
+    printf("½âC£º");
+    while (p != NULL)
+    {
+        printf(" %d",p->v);
+        p = p->next;
+    }
+    printf("\n");
+}
+void shownC()
+{
+    V * p = nChead->next;
+    printf("·ÇC£º");
+    while (p != NULL)
+    {
+        printf(" %d",p->v);
+        p = p->next;
+    }
+    printf("\n");
+}
 void main()
 {
 	int k;
@@ -548,8 +582,10 @@ void main()
 	scoreshow();
 	wconfigshow();
 
-	UBbest=UB;
+	UBbest = UB = sumW();
 	iter=0;
+	showC();
+	shownC();
 	for(i=0;i<N;i++)
 	{
 		cbest[i]=c[i];
@@ -557,10 +593,13 @@ void main()
 	}
 
 	start = clock();
-	while(iter<10000000)//ä¸çŸ¥é“ä»€ä¹ˆé¬¼æ¡ä»¶)
+	while(iter<10000000)//²»ÖªµÀÊ²Ã´¹íÌõ¼þ)
 	{
 		while(edgen == EDGE)
 		{
+
+
+            UB=sumW();
 
 			if(UB<UBbest)
 			{
@@ -571,14 +610,20 @@ void main()
 					cbest[i]=c[i];
 				}
 				step++;
-
+				/*printf("µÚ%d´Î\n",step);
+				printf("time = %ld\n",end - start);
+				printf("µü´ú´ÎÊý%d\n",iter);*/
                 h = end - start;
                 printf("%d,",h);
                 printf("%d,",iter);
                 printf("%d\n",UBbest);
+
 			}
+
 			ppre = FindScoreMaxC(&x);
 			delv(ppre);
+			//showC();
+			//shownC();
 			Eminus(x);
 			updatescore(x);
 			age[x] = 0;
@@ -587,6 +632,8 @@ void main()
 		}
 		ppre = TabuFindScoreMaxC(&x);
 		delv(ppre);
+		//showC();
+        //shownC();
 		Eminus(x);
 		updatescore(x);
 		age[x] = 0;
@@ -600,12 +647,14 @@ void main()
 		while(edgen < EDGE)
 		{
 			ppre = FindScoreMaxNC(&x);
-			if(w[x]+ UB >= UBbest)
+			if(w[x]+ sumW() >= UB)
 			{
 				break;
 			}
 
             addv(ppre);
+            //showC();
+			//shownC();
 			updatescore(x);
 			WCC_Rule3(x);
 			age[x]=0;
@@ -624,20 +673,20 @@ void main()
 	}
 	end = clock();
 
-	printf("è¿­ä»£æ¬¡æ•°%d\n",iter);
-	printf("UBbest = %d\n",UBbest);
+	printf("µü´ú´ÎÊý%d\n",iter);
+	printf("UB = %d\n",UBbest);
 	printf("time = %ld\n",end - start);
 	//eshow();
 	//scoreshow();
 	for(i=0;i<N;i++)
 	{
-		if(cbest[i]==1)
+		if(c[i]==1)
 		{
 		    vnum++;
 			printf("%d\t",w[i]);
 		}
 	}
-	printf("\nCå†…é¡¶ç‚¹æ•°ï¼š%d",vnum);
+	printf("\nCÄÚ¶¥µãÊý£º%d",vnum);
 
 	//getchar();
 
