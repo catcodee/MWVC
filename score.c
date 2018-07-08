@@ -4,9 +4,9 @@
 #include<stdlib.h>
 #include<malloc.h>
 
-#define N 10
+#define N 100
 
-#define EDGE 10
+#define EDGE 100
 
 
 typedef struct Vnode
@@ -174,7 +174,7 @@ V * TabuFindScoreMaxC(int * x)
 				pos = ppre;
 			}
 			else if (score[vi] == max)
-				pos = (age[pos->next->v] >= age[vi]) ? pos : ppre;
+				pos = (age[vi] >= age[pos->next->v]) ? ppre : pos;
 		}
 
 		ppre = p;
@@ -215,7 +215,7 @@ V * FindScoreMaxNC(int * x)
 				pos = ppre;
 			}
 			else if (score[vi] == max)
-				pos = (age[pos->next->v] > age[vi]) ? pos : ppre;
+				pos = (age[vi] >= age[pos->next->v]) ? ppre : pos;
 		}
 		ppre = p;
 		p = p->next;
@@ -244,7 +244,7 @@ V * FindScoreMaxC(int * x)
 			pos = ppre;
 		}
 		else if (score[vi] == max)
-			pos = (age[pos->next->v] > age[vi]) ? pos : ppre;
+			pos = (age[vi] >= age[pos->next->v]) ? ppre : pos;
 		ppre = p;
 		p = p->next;
 	}
@@ -272,7 +272,7 @@ int delv(V *ppre)
 	nCend = p;
 	p->next = NULL;
 
-	c[p->v] = 0;
+	
 
 }
 
@@ -414,7 +414,7 @@ void greedy()
 		c[flag] = 1;
 		addv(pos);
         Eadd(flag);
-        if (judge()) break;
+        if (edgen == EDGE) break;
 	}
 }
 
@@ -452,7 +452,7 @@ int init()
 	CreateList();
 
 
-	fp = fopen("E:\\CPP\\dingdian\\MVVC\\vc_10_10_01.txt", "r");
+	fp = fopen("E:\\CPP\\dingdian\\MVVC\\vc_100_100_01.txt", "r");
 
 	if (fp == NULL)
 	{
@@ -496,9 +496,9 @@ int init()
 			}
 		}
 	}
-	wshow();
-	eshow();
-	scoreshow();
+	// wshow();
+	// eshow();
+	// scoreshow();
 	greedy();
 	for (i = 0; i < N; i++)
 	{
@@ -673,9 +673,9 @@ int main()
 	}
 
 	start = clock();
-	while(iter<1000000)//不知道什么鬼条件)
+	while(iter < 10000000)//不知道什么鬼条件)
 	{
-		while(judge())
+		while (edgen == EDGE)
 		{
             UB=sumW();
 
@@ -701,10 +701,11 @@ int main()
 			ppre = FindScoreMaxC(&x);
 			delv(ppre);
 			Eminus(x);
+			c[x] = 0;
 			updatescore(x);
 			age[x] = 0;
 			WCC_Rule2(x);
-			printf("\n改变的是第%d个顶点，次数%d\n", x, iter);
+			// printf("\n改变的是第%d个顶点，次数%d\n", x, iter);
 			// printf("\n");
 			// jiance();
 			// printf("第一个小循环 iter = %d,选中%d\n", iter,x);
@@ -717,24 +718,24 @@ int main()
 
 
 		}
-		if (iter < 10 && iter > 5)
-		{
-			cshow();
-			scoreshow();
-			wconfigshow();
-			tabushow();
-			ageshow();
-			eshow();
-			printf("egden = %d", edgen);
-		}
+		// if (iter < 40 && iter > 34)
+		// {
+		// 	cshow();
+		// 	scoreshow();
+		// 	wconfigshow();
+		// 	tabushow();
+		// 	ageshow();
+		// 	eshow();
+		// 	printf("egden = %d", edgen);
+		// }
 		ppre = TabuFindScoreMaxC(&x);
 		delv(ppre);
 		Eminus(x);
-		
 		updatescore(x);
+		c[x] = 0;
 		age[x] = 0;
 		WCC_Rule2(x);
-		//printf("\n减去的是第%d个顶点，次数%d\n", x, iter);
+		// printf("\n减去的是第%d个顶点，次数%d\n", x, iter);
 		// printf("\n");
 		// jiance();
 		// printf("禁忌 iter = %d,选中 %d\n", iter,x);
@@ -752,7 +753,7 @@ int main()
 			tabu[i]=0;
 		}
 
-		while(!judge())
+		while(edgen < EDGE)
 		{
 			ppre = FindScoreMaxNC(&x);
 			if(w[x]+ sumW() >= UB)
@@ -760,25 +761,24 @@ int main()
 			    //printf("\nbreak\n,x = %d",x);
 				break;
 			}
-			if (iter < 10 && iter > 5)
-			{
-				cshow();
-				scoreshow();
-				wconfigshow();
-				tabushow();
-				ageshow();
-				eshow();
-				printf("egden = %d", edgen);
-			}
+			// if (iter < 40 && iter > 34)
+			// {
+			// 	cshow();
+			// 	scoreshow();
+			// 	wconfigshow();
+			// 	tabushow();
+			// 	ageshow();
+			// 	eshow();
+			// 	printf("egden = %d", edgen);
+			// }
 			addv(ppre);
             Eadd(x);
-			
             updatescore(x);
 			WCC_Rule3(x);
 			age[x]=0;
 			updateDW();
 			tabu[x]=1;
-			//printf("\n增加的是第%d个顶点，次数%d\n", x, iter);
+			// printf("\n增加的是第%d个顶点，次数%d\n", x, iter);
 			// printf("\n");
 			// jiance();
 			// printf("第二个小循环 iter = %d\n", iter);
