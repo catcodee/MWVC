@@ -174,7 +174,7 @@ V * TabuFindScoreMaxC(int * x)
 				pos = ppre;
 			}
 			else if (score[vi] == max)
-				pos = (age[pos->next->v] > age[vi]) ? pos : ppre;
+				pos = (age[pos->next->v] >= age[vi]) ? pos : ppre;
 		}
 
 		ppre = p;
@@ -361,6 +361,7 @@ void updateDW()
 			}
 			p2 = p2->next;
 		}
+		p2 = nChead->next;
 		p1 = p1->next;
 	}
 }
@@ -569,6 +570,30 @@ void wconfigshow()
 	printf("\n");
 }
 
+void ageshow()
+{
+	int i;
+	printf("年龄：\n");
+	for (i = 0; i < N; i++)
+	{
+		printf(" %d", age[i]);
+	}
+	printf("\n");
+	printf("\n");
+}
+
+void tabushow()
+{
+	int i;
+	printf("禁忌表：\n");
+	for (i = 0; i < N; i++)
+	{
+		printf(" %d", tabu[i]);
+	}
+	printf("\n");
+	printf("\n");
+}
+
 void WCC_Rule2(int vi)
 {
 	int i;
@@ -632,15 +657,15 @@ int main()
 	int x = 0;
 
 	init();
-	wshow();
+	//wshow();
 	//eshow();
-	scoreshow();
-	wconfigshow();
+	// scoreshow();
+	// wconfigshow();
 
 	UBbest = UB = sumW();
 	iter=0;
-	showC();
-	shownC();
+	// showC();
+	// shownC();
 	for(i=0;i<N;i++)
 	{
 		cbest[i]=c[i];
@@ -648,12 +673,10 @@ int main()
 	}
 
 	start = clock();
-	while(iter<10000000)//不知道什么鬼条件)
+	while(iter<1000000)//不知道什么鬼条件)
 	{
 		while(judge())
 		{
-
-
             UB=sumW();
 
 			if(UB<UBbest)
@@ -681,6 +704,7 @@ int main()
 			updatescore(x);
 			age[x] = 0;
 			WCC_Rule2(x);
+			printf("\n改变的是第%d个顶点，次数%d\n", x, iter);
 			// printf("\n");
 			// jiance();
 			// printf("第一个小循环 iter = %d,选中%d\n", iter,x);
@@ -693,12 +717,24 @@ int main()
 
 
 		}
+		if (iter < 10 && iter > 5)
+		{
+			cshow();
+			scoreshow();
+			wconfigshow();
+			tabushow();
+			ageshow();
+			eshow();
+			printf("egden = %d", edgen);
+		}
 		ppre = TabuFindScoreMaxC(&x);
 		delv(ppre);
 		Eminus(x);
+		
 		updatescore(x);
 		age[x] = 0;
 		WCC_Rule2(x);
+		//printf("\n减去的是第%d个顶点，次数%d\n", x, iter);
 		// printf("\n");
 		// jiance();
 		// printf("禁忌 iter = %d,选中 %d\n", iter,x);
@@ -724,15 +760,26 @@ int main()
 			    //printf("\nbreak\n,x = %d",x);
 				break;
 			}
-
-            addv(ppre);
+			if (iter < 10 && iter > 5)
+			{
+				cshow();
+				scoreshow();
+				wconfigshow();
+				tabushow();
+				ageshow();
+				eshow();
+				printf("egden = %d", edgen);
+			}
+			addv(ppre);
             Eadd(x);
+			
             updatescore(x);
 			WCC_Rule3(x);
 			age[x]=0;
 			updateDW();
 			tabu[x]=1;
-            // printf("\n");
+			//printf("\n增加的是第%d个顶点，次数%d\n", x, iter);
+			// printf("\n");
 			// jiance();
 			// printf("第二个小循环 iter = %d\n", iter);
 			// showC();
@@ -768,6 +815,8 @@ int main()
 			printf("%d\t",w[i]);
 		}
 	}
+	scoreshow();
+	eshow();
 	printf("\nC内顶点数：%d",vnum);
 	getchar();
 
