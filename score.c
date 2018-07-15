@@ -4,9 +4,8 @@
 #include<stdlib.h>
 #include<malloc.h>
 
-#define N 100
-
-#define EDGE 100
+#define N 300
+#define EDGE 500
 
 
 typedef struct Vnode
@@ -19,7 +18,6 @@ typedef struct Vnode
 
 int w[N];             //顶点权重
 int e[N][N] = {{0}};          //邻接表
-
 
 V * Chead;
 V * Cend;
@@ -34,8 +32,9 @@ int cbest[N];
 int age[N];
 int tabu[N];
 int UB;               //解的总权重
+int UBn = 0;
 long iter;			//迭代次数
-int score[N];
+float score[N];
 int wconfig[N];
 int UBbest;
 int edgen = 0;
@@ -51,7 +50,7 @@ int judge()
 		{
 			if (e[i][j] > 0)
 			{
-				if ((c[i] + c[j]) == 0)
+				if ((cbest[i] + cbest[j]) == 0)
 				{
 					// printf("\n有不被包含的边i=%dj=%d\n",i,j);
 					return 0;
@@ -144,6 +143,32 @@ void DeleteList()
 	}
 	free(ppre);
 }
+void initscore()
+{
+	int i;
+	int j;
+	for (i = 0; i < N; i++)
+	{
+		score[i] = 0;
+		for (j = 0; j < N; j++)
+		{
+			if (e[i][j] == 1)
+			{
+				if (c[i] == 0)
+				{
+					if (c[j] == 0)
+						score[i] += 1.0;
+				}
+				if (c[i] == 1)
+				{
+					if (c[j] == 0)
+						score[i] -= 1.0;
+				}
+			}
+		}
+		score[i] /= w[i];
+	}
+}
 
 V * TabuFindScoreMaxC(int * x)
 {
@@ -158,11 +183,14 @@ V * TabuFindScoreMaxC(int * x)
 		if (tabu[vi] == 0)
 		{
 			max = score[vi];
+			pos = ppre;
 			break;
 		}
+		ppre = p;
 		p = p->next;
 	}
-
+	ppre = p;
+	p = p->next;
 	while (p != NULL)
 	{
 		vi = p->v;
@@ -174,7 +202,17 @@ V * TabuFindScoreMaxC(int * x)
 				pos = ppre;
 			}
 			else if (score[vi] == max)
-				pos = (age[vi] >= age[pos->next->v]) ? ppre : pos;
+			{
+				if (age[vi] > age[pos->next->v])
+				{
+					max = score[vi];
+					pos = ppre;
+				}
+				else if (age[vi] == age[pos->next->v])
+				{
+					pos = (rand()%2) ? pos : ppre;
+				}
+			}
 		}
 
 		ppre = p;
@@ -200,10 +238,16 @@ V * FindScoreMaxNC(int * x)
 		if (wconfig[vi]  == 1)
 		{
 			max = score[vi];
+			pos = ppre;
 			break;
 		}
+		ppre = p;
 		p = p->next;
 	}
+
+	ppre = p;
+	p = p->next;
+
 	while (p != NULL)
 	{
 		vi = p->v;
@@ -215,7 +259,17 @@ V * FindScoreMaxNC(int * x)
 				pos = ppre;
 			}
 			else if (score[vi] == max)
-				pos = (age[vi] >= age[pos->next->v]) ? ppre : pos;
+			{
+				if (age[vi] > age[pos->next->v])
+				{
+					max = score[vi];
+					pos = ppre;
+				}
+				else if (age[vi] == age[pos->next->v])
+				{
+					pos = (rand() % 2) ? pos : ppre;
+				}
+			}
 		}
 		ppre = p;
 		p = p->next;
@@ -244,7 +298,17 @@ V * FindScoreMaxC(int * x)
 			pos = ppre;
 		}
 		else if (score[vi] == max)
-			pos = (age[vi] >= age[pos->next->v]) ? ppre : pos;
+		{
+			if (age[vi] > age[pos->next->v])
+			{
+				max = score[vi];
+				pos = ppre;
+			}
+			else if (age[vi] == age[pos->next->v])
+			{
+				pos = (rand() % 2) ? pos : ppre;
+			}
+		}
 		ppre = p;
 		p = p->next;
 	}
@@ -257,43 +321,36 @@ V * FindScoreMaxC(int * x)
 int delv(V *ppre)
 {
 
-	V * p = ppre->next;
-	if (ppre == Chead)
-		Chead->next = p->next;
-	else if (p == Cend)
+	V *p = ppre->next;
+	if (Cend == p)
 	{
 		Cend = ppre;
-		ppre->next = NULL;
+		//ppre->next = NULL;
 	}
-	else
-		ppre->next = p->next;
+	ppre->next = p->next;
 
 	nCend->next = p;
 	nCend = p;
 	p->next = NULL;
 
-	
-
+	UBn -= w[p->v];
 }
 
 int addv(V * ppre)
 {
 	V * p = ppre->next;
-	if (ppre == nChead)
-		nChead->next = p->next;
-	else if (p == nCend)
-	{
+	if (nCend == p)
 		nCend = ppre;
-		ppre->next = NULL;
-	}
-	else
-		ppre->next = p->next;
+		//ppre->next = NULL;
+	
+	ppre->next = p->next;
 
 	Cend->next = p;
 	Cend = p;
 	p->next = NULL;
 
 	c[p->v] = 1;
+	UBn += w[p->v];
 }
 
 
@@ -331,11 +388,11 @@ void updatescore(int x)
 		{
 			if (c[i] + c[x] == 1)
 			{
-				score[i] = score[i] - e[x][i] / w[i];
+				score[i] = score[i] - e[x][i]*1.0 / w[i];
 			}
 			else
 			{
-				score[i] = score[i] + e[x][i] / w[i];
+				score[i] = score[i] + e[x][i]*1.0 / w[i];
 			}
 		}
 	}
@@ -358,6 +415,8 @@ void updateDW()
 				e[v1][v2]++;
 				wconfig[v1] = 1;
 				wconfig[v2] = 1;
+				score[v1] = score[v1] + 1.0 / w[v1];
+				score[v2] = score[v2] + 1.0 / w[v2];
 			}
 			p2 = p2->next;
 		}
@@ -391,13 +450,15 @@ void greedy()
 	float max;
 
 	for (i = 0; i < N; i++)
-		tmp[i] = score[i]*1.0/w[i];
+		tmp[i] = score[i] * 1.0 / w[i];
 
 	for (k = 0; k < N; k++)
 	{
 		ppre = nChead;
 		p = nChead->next;
-		max = tmp[vi];
+		max = tmp[p->v];
+		pos = nChead;
+		flag = p->v;
 		while (p != NULL)
 		{
 			vi = p->v;
@@ -412,9 +473,26 @@ void greedy()
 		}
 
 		c[flag] = 1;
+		
+		// printf("\nflag = %d,pos = %d\n",flag,pos->next->v);
+
 		addv(pos);
+		// showC();
+		// shownC();
+		// printf("\n");
         Eadd(flag);
-        if (edgen == EDGE) break;
+		// printf ("edgen = %d\n",edgen);
+		// updatescore(flag);
+		// WCC_Rule3(flag);
+		// if (!judge())
+		// {
+		// 	printf("\n解有问题！！！\n");
+		// }
+		// else
+		// {
+		// 	printf("\n成功\n");
+		// }
+		if (edgen == EDGE) break;
 	}
 }
 
@@ -437,73 +515,58 @@ int jiance()
 int init()
 {
 	FILE *fp;
+	
 
 	int i, j, n = 0, k = 0;
-	char str[5000] = {'0'};
-	char tmp[10];
-
+	int eg = 0;
+	int skip;
 
 	for (i = 0; i < N; i++)
 	{
 		wconfig[i] = 1;
-		score[i] = 0;
+		score[i] = 0.0;
 	}
 
 	CreateList();
+	srand((unsigned int )time(NULL));
 
-
-	fp = fopen("E:\\CPP\\dingdian\\MVVC\\vc_100_100_01.txt", "r");
+	fp = fopen("E:\\CPP\\dingdian\\MVVC\\vc_300_500_04.txt", "r");
+	
 
 	if (fp == NULL)
 	{
 		printf("The file can not be opened in init().\n");
 		return 0;
 	}
+	
 
-	for (n = 0; !feof(fp); n++)
-	{
-		if (!getline(str, fp, 5000))
-		{
-			printf("The array str is too small at init().\n");
-			return 0;
-		}
-
-		if (n == 1)
-		{
-			for (i = 0, k = 0; str[i] != '\n'; k++)
-			{
-				for (j = 0; j < 5 && str[i] != '\n';)
-					tmp[j++] = str[i++];
-				tmp[j] = '\n';
-				w[k] = atoi(tmp);
-
-			}
-		}
-
-		if (n > 1)
-		{
-			for (i = 1, k = 0; (str[i] != '\n') && (k < N); i++, k++)
-			{
-
-				for (j = 0; (str[i] != ' ') && (str[i] != '\n'); i++)
-				{
-					tmp[j++] = str[i];
-				}
-				tmp[j] = '\n';
-				e[n - 2][k] = atoi(tmp);
-				if (e[n - 2][k] == 1)
-					score[n - 2] = score[n - 2] + 1;
-			}
-		}
-	}
-	// wshow();
-	// eshow();
-	// scoreshow();
-	greedy();
+	fscanf(fp,"%d",&skip);
 	for (i = 0; i < N; i++)
 	{
-		printf(" %d", c[i]);
+		fscanf(fp,"%d",w+i);
 	}
+
+	for (i = 0; i < N; i++)
+	{
+		for (j = 0; j < N; j++)
+			fscanf(fp,"%d",e[i]+j);
+	}
+	
+	// printf("eg = %d\n",eg);
+	// wshow();
+	// eshow();
+	greedy();
+	initscore();
+	// scoreshow();
+	// if (!judge())
+	// {
+	// 	printf("\n解有问题！！！\n");
+	// }
+	// else
+	// {
+	// 	printf("\n成功\n");
+	// }
+	fclose(fp);
 	return 1;
 }
 
@@ -552,7 +615,7 @@ void scoreshow()
 	printf("分数：\n");
 	for (i = 0; i < N; i++)
 	{
-		printf(" %d", score[i]);
+		printf(" %f", score[i]);
 	}
 	printf("\n");
 	printf("\n");
@@ -655,49 +718,48 @@ int main()
 	clock_t h;
 	V * ppre;
 	int x = 0;
+	FILE *output;
+	output = fopen("E:\\CPP\\dingdian\\MVVC\\bin\\output.csv", "wt");
+
+	if (output == NULL)
+	{
+		printf("The file can not be opened in init().\n");
+		return 0;
+	}
 
 	init();
-	//wshow();
-	//eshow();
-	// scoreshow();
-	// wconfigshow();
 
 	UBbest = UB = sumW();
 	iter=0;
-	// showC();
-	// shownC();
+	
 	for(i=0;i<N;i++)
 	{
 		cbest[i]=c[i];
-		//printf("%d\t",c[i]);
+		
 	}
 
 	start = clock();
-	while(iter < 10000000)//不知道什么鬼条件)
+	while(iter < 3000000)
 	{
 		while (edgen == EDGE)
 		{
-            UB=sumW();
+            UB = UBn;
 
-			if(UB<UBbest)
+			if(UB <= UBbest)
 			{
 			    end = clock();
 				UBbest=UB;
-				for(i=0;i<N;i++)
+				for(i = 0;i < N; i++)
 				{
 					cbest[i]=c[i];
 				}
-				step++;
-				/*printf("第%d次\n",step);
-				printf("time = %ld\n",end - start);
-				printf("迭代次数%d\n",iter);*/
                 h = end - start;
+				fprintf(output,"%d,%d,%d\n",h,iter,UBbest);
                 printf("%d,",h);
                 printf("%d,",iter);
                 printf("%d\n",UBbest);
-
 			}
-
+			
 			ppre = FindScoreMaxC(&x);
 			delv(ppre);
 			Eminus(x);
@@ -705,49 +767,14 @@ int main()
 			updatescore(x);
 			age[x] = 0;
 			WCC_Rule2(x);
-			// printf("\n改变的是第%d个顶点，次数%d\n", x, iter);
-			// printf("\n");
-			// jiance();
-			// printf("第一个小循环 iter = %d,选中%d\n", iter,x);
-			// showC();
-			// shownC();
-			// scoreshow();
-			// printf("edgen = %d\n",edgen);
-			// cshow();
-            // printf("\n");
-
-
 		}
-		// if (iter < 40 && iter > 34)
-		// {
-		// 	cshow();
-		// 	scoreshow();
-		// 	wconfigshow();
-		// 	tabushow();
-		// 	ageshow();
-		// 	eshow();
-		// 	printf("egden = %d", edgen);
-		// }
 		ppre = TabuFindScoreMaxC(&x);
+		c[x] = 0;
 		delv(ppre);
 		Eminus(x);
 		updatescore(x);
-		c[x] = 0;
 		age[x] = 0;
 		WCC_Rule2(x);
-		// printf("\n减去的是第%d个顶点，次数%d\n", x, iter);
-		// printf("\n");
-		// jiance();
-		// printf("禁忌 iter = %d,选中 %d\n", iter,x);
-		// showC();
-		// shownC();
-		// scoreshow();
-		// cshow();
-		// printf("edgen = %d\n",edgen);
-		// wconfigshow();
-		// printf("\n");
-
-
 		for(i=0;i<N;i++)
 		{
 			tabu[i]=0;
@@ -756,43 +783,24 @@ int main()
 		while(edgen < EDGE)
 		{
 			ppre = FindScoreMaxNC(&x);
-			if(w[x]+ sumW() >= UB)
+			if(w[x] + UBn >= UB)
 			{
-			    //printf("\nbreak\n,x = %d",x);
 				break;
 			}
-			// if (iter < 40 && iter > 34)
-			// {
-			// 	cshow();
-			// 	scoreshow();
-			// 	wconfigshow();
-			// 	tabushow();
-			// 	ageshow();
-			// 	eshow();
-			// 	printf("egden = %d", edgen);
-			// }
 			addv(ppre);
             Eadd(x);
             updatescore(x);
 			WCC_Rule3(x);
+			
 			age[x]=0;
-			updateDW();
 			tabu[x]=1;
-			// printf("\n增加的是第%d个顶点，次数%d\n", x, iter);
-			// printf("\n");
-			// jiance();
-			// printf("第二个小循环 iter = %d\n", iter);
-			// showC();
-			// shownC();
-			// cshow();
-			// printf("edgen = %d\n",edgen);
-			// scoreshow();
-			// printf("\n");
-
-
 		}
-
+		updateDW();
 		iter++;
+		if (iter % 1000000 == 0)
+		{
+			printf("\n 一百万！\n");
+		}
 
 		for(i=0;i<N;i++)
 		{
@@ -809,15 +817,27 @@ int main()
 	//scoreshow();
 	for(i=0;i<N;i++)
 	{
-		if(cbest[i]==1)
-		{
-		    vnum++;
-			printf("%d\t",w[i]);
-		}
+		
+		printf("% d",cbest[i]);
+		if (cbest[i] == 1) vnum++;
 	}
-	scoreshow();
-	eshow();
+	printf ("\n");
+
+	if (!judge())
+	{
+		printf ("\n解有问题！！！\n");
+	}
+	else
+	{
+		printf ("\n成功\n");
+	}
+	
+	//scoreshow();
+	//eshow();
+
 	printf("\nC内顶点数：%d",vnum);
+	fclose(output);
+	DeleteList();
 	getchar();
 
 	//getchar();
