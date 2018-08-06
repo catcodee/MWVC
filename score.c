@@ -16,8 +16,8 @@ typedef struct Vnode
 
 }   V;
 
-int w[N];             //¶¥µãÈ¨ÖØ
-int e[N][N] = {{0}};          //ÁÚ½Ó±í
+int w[N];             //é¡¶ç‚¹æƒé‡
+int e[N][N] = {{0}};          //é‚»æ¥è¡¨
 
 V * Chead;
 V * Cend;
@@ -31,9 +31,9 @@ int c[N];
 int cbest[N];
 int age[N];
 int tabu[N];
-int UB;               //½âµÄ×ÜÈ¨ÖØ
+int UB;               //è§£çš„æ€»æƒé‡
 int UBn = 0;
-long iter;			//µü´ú´ÎÊı
+long iter;			//è¿­ä»£æ¬¡æ•°
 float score[N];
 int wconfig[N];
 int UBbest;
@@ -52,7 +52,7 @@ int judge()
 			{
 				if ((cbest[i] + cbest[j]) == 0)
 				{
-					// printf("\nÓĞ²»±»°üº¬µÄ±ßi=%dj=%d\n",i,j);
+					// printf("\næœ‰ä¸è¢«åŒ…å«çš„è¾¹i=%dj=%d\n",i,j);
 					return 0;
 				}
 			}
@@ -486,11 +486,11 @@ void greedy()
 		// WCC_Rule3(flag);
 		// if (!judge())
 		// {
-		// 	printf("\n½âÓĞÎÊÌâ£¡£¡£¡\n");
+		// 	printf("\nè§£æœ‰é—®é¢˜ï¼ï¼ï¼\n");
 		// }
 		// else
 		// {
-		// 	printf("\n³É¹¦\n");
+		// 	printf("\næˆåŠŸ\n");
 		// }
 		if (edgen == EDGE) break;
 	}
@@ -503,7 +503,7 @@ int jiance()
 	{
 		if (c[p->v] == 0)
 		{
-			printf("C Óë c²»¶ÔÓ¦\n");
+			printf("C ä¸ cä¸å¯¹åº”\n");
 			return 0;
 		}
 		p = p->next;
@@ -560,11 +560,11 @@ int init()
 	// scoreshow();
 	// if (!judge())
 	// {
-	// 	printf("\n½âÓĞÎÊÌâ£¡£¡£¡\n");
+	// 	printf("\nè§£æœ‰é—®é¢˜ï¼ï¼ï¼\n");
 	// }
 	// else
 	// {
-	// 	printf("\n³É¹¦\n");
+	// 	printf("\næˆåŠŸ\n");
 	// }
 	fclose(fp);
 	return 1;
@@ -575,7 +575,7 @@ int init()
 void wshow()
 {
 	int i;
-	printf("È¨ÖØ£º\n");
+	printf("æƒé‡ï¼š\n");
 	for (i = 0; i < N; i++)
 	{
 		printf(" %d", w[i]);
@@ -587,7 +587,7 @@ void wshow()
 void cshow()
 {
 	int i;
-	printf("½á¹û£º\n");
+	printf("ç»“æœï¼š\n");
 	for (i = 0; i < N; i++)
 	{
 		printf(" %d", c[i]);
@@ -599,7 +599,7 @@ void cshow()
 void eshow()
 {
 	int i, j;
-	printf("¶¯Ì¬±ß£º\n");
+	printf("åŠ¨æ€è¾¹ï¼š\n");
 	for (i = 0; i < N; i++)
 	{
 		for (j = 0; j < N; j++)
@@ -612,7 +612,7 @@ void eshow()
 void scoreshow()
 {
 	int i;
-	printf("·ÖÊı£º\n");
+	printf("åˆ†æ•°ï¼š\n");
 	for (i = 0; i < N; i++)
 	{
 		printf(" %f", score[i]);
@@ -624,7 +624,7 @@ void scoreshow()
 void wconfigshow()
 {
 	int i;
-	printf("¸ñ¾Ö£º\n");
+	printf("æ ¼å±€ï¼š\n");
 	for (i = 0; i < N; i++)
 	{
 		printf(" %d", wconfig[i]);
@@ -636,7 +636,7 @@ void wconfigshow()
 void ageshow()
 {
 	int i;
-	printf("ÄêÁä£º\n");
+	printf("å¹´é¾„ï¼š\n");
 	for (i = 0; i < N; i++)
 	{
 		printf(" %d", age[i]);
@@ -648,7 +648,7 @@ void ageshow()
 void tabushow()
 {
 	int i;
-	printf("½û¼É±í£º\n");
+	printf("ç¦å¿Œè¡¨ï¼š\n");
 	for (i = 0; i < N; i++)
 	{
 		printf(" %d", tabu[i]);
@@ -687,7 +687,7 @@ void WCC_Rule4(int vi, int ui)
 void showC()
 {
     V * p = Chead->next;
-    printf("½âC£º");
+    printf("è§£Cï¼š");
     while (p != NULL)
     {
         printf(" %d",p->v);
@@ -698,7 +698,7 @@ void showC()
 void shownC()
 {
     V * p = nChead->next;
-    printf("·ÇC£º");
+    printf("éCï¼š");
     while (p != NULL)
     {
         printf(" %d",p->v);
@@ -799,7 +799,7 @@ int main()
 		iter++;
 		if (iter % 1000000 == 0)
 		{
-			printf("\n Ò»°ÙÍò£¡\n");
+			printf("\n ä¸€ç™¾ä¸‡ï¼\n");
 		}
 
 		for(i=0;i<N;i++)
@@ -810,7 +810,7 @@ int main()
 	}
 	end = clock();
 
-	printf("µü´ú´ÎÊı%d\n",iter);
+	printf("è¿­ä»£æ¬¡æ•°%d\n",iter);
 	printf("UB = %d\n",UBbest);
 	printf("time = %ld\n",end - start);
 	//eshow();
@@ -825,17 +825,17 @@ int main()
 
 	if (!judge())
 	{
-		printf ("\n½âÓĞÎÊÌâ£¡£¡£¡\n");
+		printf ("\nè§£æœ‰é—®é¢˜ï¼ï¼ï¼\n");
 	}
 	else
 	{
-		printf ("\n³É¹¦\n");
+		printf ("\næˆåŠŸ\n");
 	}
 	
 	//scoreshow();
 	//eshow();
 
-	printf("\nCÄÚ¶¥µãÊı£º%d",vnum);
+	printf("\nCå†…é¡¶ç‚¹æ•°ï¼š%d",vnum);
 	fclose(output);
 	DeleteList();
 	getchar();
